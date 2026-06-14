@@ -253,12 +253,23 @@
                 }
             }
 
-            // 确保出生点周围没有墙
-            walls = walls.filter(w =>
-                !(w.x > 260 && w.x < 340 && w.y > 500 && w.y < 580) &&
-                !(w.x > 100 && w.x < 180 && w.y > 500 && w.y < 580) &&
-                !(w.x > 420 && w.x < 500 && w.y > 500 && w.y < 580)
-            );
+            // 确保所有出生点周围没有墙
+            walls = walls.filter(w => {
+                // 玩家出生点（底部）
+                if (w.x > 260 && w.x < 340 && w.y > 500 && w.y < 580) return false;
+                if (w.x > 100 && w.x < 180 && w.y > 500 && w.y < 580) return false;
+                if (w.x > 420 && w.x < 500 && w.y > 500 && w.y < 580) return false;
+
+                // 敌方坦克出生点（顶部）- 三个出生点及其周围
+                // 出生点1: (60, 60)
+                if (w.x > 20 && w.x < 100 && w.y > 20 && w.y < 140) return false;
+                // 出生点2: (300, 60)
+                if (w.x > 260 && w.x < 340 && w.y > 20 && w.y < 140) return false;
+                // 出生点3: (540, 60)
+                if (w.x > 500 && w.x < 580 && w.y > 20 && w.y < 140) return false;
+
+                return true;
+            });
         }
 
         function isOverlapping(newWall) {
@@ -572,21 +583,20 @@
 
             // 更新敌方坦克
             enemies.forEach(enemy => {
-                enemy.moveTimer++;
-
-                // 随机改变方向（每60-120帧改变一次）
-                if (enemy.moveTimer > 60) {
-                    enemy.moveTimer = 0;
-                    const directions = ['up', 'down', 'left', 'right'];
-                    enemy.direction = directions[Math.floor(Math.random() * 4)];
-                }
-
-                // 向玩家移动的概率
-                if (Math.random() < 0.02) {
+                // 向玩家移动的概率（增加追踪玩家的概率）
+                if (Math.random() < 0.05) {
                     if (player.x < enemy.x) enemy.direction = 'left';
                     else if (player.x > enemy.x) enemy.direction = 'right';
                     else if (player.y < enemy.y) enemy.direction = 'up';
                     else enemy.direction = 'down';
+                }
+
+                // 随机改变方向
+                enemy.moveTimer++;
+                if (enemy.moveTimer > 40) {
+                    enemy.moveTimer = 0;
+                    const directions = ['up', 'down', 'left', 'right'];
+                    enemy.direction = directions[Math.floor(Math.random() * 4)];
                 }
 
                 // 移动
@@ -631,18 +641,19 @@
                     canMove = false;
                 }
 
-                // 如果无法移动，立即改变方向
-                if (!canMove) {
-                    const directions = ['up', 'down', 'left', 'right'];
-                    enemy.direction = directions[Math.floor(Math.random() * 4)];
-                    enemy.moveTimer = 50; // 很快再次尝试改变方向
-                } else {
+                if (canMove) {
                     enemy.x = newX;
                     enemy.y = newY;
+                    enemy.moveTimer = 0; // 成功移动，重置计时器
+                } else {
+                    // 无法移动，立即改变方向
+                    const directions = ['up', 'down', 'left', 'right'];
+                    enemy.direction = directions[Math.floor(Math.random() * 4)];
+                    enemy.moveTimer = 30; // 很快再次尝试
                 }
 
                 // 射击
-                if (Math.random() < 0.02) {
+                if (Math.random() < 0.03) {
                     enemyShoot(enemy);
                 }
             });
