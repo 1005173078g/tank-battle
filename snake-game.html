@@ -228,6 +228,37 @@
 
         document.getElementById('highScore').textContent = highScore;
 
+        // 语音播报函数
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                // 取消之前的语音
+                window.speechSynthesis.cancel();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN'; // 中文
+                utterance.rate = 1.0; // 语速
+                utterance.pitch = 1.0; // 音调
+                utterance.volume = 1.0; // 音量
+
+                // 尝试获取中文语音
+                const voices = window.speechSynthesis.getVoices();
+                const chineseVoice = voices.find(voice => voice.lang.includes('zh'));
+                if (chineseVoice) {
+                    utterance.voice = chineseVoice;
+                }
+
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // 预加载语音列表
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+        }
+
         function initGame() {
             snake = [
                 { x: 5, y: 10 },
@@ -433,6 +464,9 @@
             if (head.x === food.x && head.y === food.y) {
                 score += 10;
                 document.getElementById('score').textContent = score;
+
+                // 播报"毛毛瓜皮"
+                speak('毛毛瓜皮');
 
                 if (gameSpeed > 50) {
                     gameSpeed -= 2;
