@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>贪吃蛇游戏</title>
+    <title>毛毛瓜皮贪吃蛇</title>
     <style>
         * {
             margin: 0;
@@ -32,7 +32,7 @@
         h1 {
             color: #fff;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-size: 2.5em;
             text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
         }
@@ -40,7 +40,7 @@
         .info-panel {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             color: #fff;
             font-size: 1.2em;
         }
@@ -49,6 +49,47 @@
             background: rgba(255, 255, 255, 0.2);
             padding: 10px 20px;
             border-radius: 10px;
+        }
+
+        /* 播报字幕样式 */
+        .announcement {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 20px #ff6b6b, 0 0 40px #ff6b6b, 0 0 60px #ff6b6b;
+            pointer-events: none;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+            animation: none;
+        }
+
+        .announcement.show {
+            opacity: 1;
+            animation: announce 1.5s ease-out forwards;
+        }
+
+        @keyframes announce {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+            20% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+            80% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -80%) scale(0.8);
+                opacity: 0;
+            }
         }
 
         canvas {
@@ -158,6 +199,25 @@
             background: rgba(255, 255, 255, 0.3);
         }
 
+        .combo-counter {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 107, 107, 0.9);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+            opacity: 0;
+            transition: all 0.3s;
+            z-index: 100;
+        }
+
+        .combo-counter.show {
+            opacity: 1;
+        }
+
         @media (max-width: 650px) {
             .mobile-controls {
                 display: block;
@@ -169,16 +229,22 @@
     </style>
 </head>
 <body>
+    <!-- 播报字幕 -->
+    <div class="announcement" id="announcement">毛毛宇宙无敌大瓜皮！</div>
+
+    <!-- 连击计数器 -->
+    <div class="combo-counter" id="comboCounter">🔥 连击 x1</div>
+
     <div class="game-container">
-        <h1>🐍 贪吃蛇</h1>
+        <h1>🐍 毛毛瓜皮贪吃蛇</h1>
         <div class="info-panel">
             <div class="score">得分: <span id="score">0</span></div>
             <div class="high-score">最高分: <span id="highScore">0</span></div>
         </div>
         <canvas id="gameCanvas" width="400" height="400"></canvas>
         <div class="controls">
-            <p>🎯 使用 <strong>方向键</strong> 或 <strong>WASD</strong> 控制蛇的移动方向</p>
-            <p>🍎 吃到食物得分，蛇会变长</p>
+            <p>🎯 使用 <strong>方向键</strong> 或 <strong>WASD</strong> 控制方向</p>
+            <p>🍎 吃到食物得分，每5个升级播报！</p>
             <p>⏸️ 按 <strong>空格键</strong> 暂停游戏</p>
         </div>
         <div class="mobile-controls">
@@ -197,7 +263,7 @@
     <div class="game-over" id="gameOver">
         <h2>游戏结束</h2>
         <p>最终得分: <span id="finalScore">0</span></p>
-        <button class="restart-btn" onclick="restartGame()">重新开始</button>
+        <button class="restart-btn" onclick="restartGame()">🔄 重新开始</button>
     </div>
 
     <script>
@@ -213,6 +279,8 @@
         let inputQueue = [];
         let score = 0;
         let highScore = 0;
+        let foodCount = 0; // 记录吃到的食物数量
+        let comboLevel = 1; // 连击等级
 
         try {
             highScore = localStorage.getItem('snakeHighScore') || 0;
@@ -229,18 +297,16 @@
         document.getElementById('highScore').textContent = highScore;
 
         // 语音播报函数
-        function speak(text) {
+        function speak(text, volume = 1.0, rate = 1.2, pitch = 1.3) {
             if ('speechSynthesis' in window) {
-                // 取消之前的语音
                 window.speechSynthesis.cancel();
 
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-CN'; // 中文
-                utterance.rate = 1.0; // 语速
-                utterance.pitch = 1.0; // 音调
-                utterance.volume = 1.0; // 音量
+                utterance.lang = 'zh-CN';
+                utterance.rate = rate; // 语速
+                utterance.pitch = pitch; // 音调 - 更生动
+                utterance.volume = volume; // 音量
 
-                // 尝试获取中文语音
                 const voices = window.speechSynthesis.getVoices();
                 const chineseVoice = voices.find(voice => voice.lang.includes('zh'));
                 if (chineseVoice) {
@@ -249,6 +315,73 @@
 
                 window.speechSynthesis.speak(utterance);
             }
+        }
+
+        // 显示字幕播报
+        function showAnnouncement(text, fontSize = 48) {
+            const announcement = document.getElementById('announcement');
+            announcement.textContent = text;
+            announcement.style.fontSize = fontSize + 'px';
+            announcement.classList.remove('show');
+
+            // 强制重绘以触发动画
+            void announcement.offsetWidth;
+            announcement.classList.add('show');
+
+            // 动画结束后隐藏
+            setTimeout(() => {
+                announcement.classList.remove('show');
+            }, 1500);
+        }
+
+        // 更新连击计数器
+        function updateComboCounter() {
+            const counter = document.getElementById('comboCounter');
+            if (comboLevel > 1) {
+                counter.textContent = `🔥 连击 x${comboLevel}`;
+                counter.classList.add('show');
+            } else {
+                counter.classList.remove('show');
+            }
+        }
+
+        // 播报吃到食物
+        function announceFood() {
+            foodCount++;
+
+            // 每5个食物升级
+            if (foodCount % 5 === 0) {
+                comboLevel = Math.min(comboLevel + 1, 10);
+            }
+
+            // 根据连击等级调整音量和字体大小
+            const baseVolume = 1.0;
+            const baseFontSize = 48;
+            const volume = Math.min(baseVolume + (comboLevel - 1) * 0.1, 1.5);
+            const fontSize = Math.min(baseFontSize + (comboLevel - 1) * 8, 96);
+
+            // 根据等级显示不同的播报内容
+            let announcementText = '毛毛宇宙无敌大瓜皮！';
+            if (comboLevel >= 3) {
+                announcementText = '毛毛超级宇宙无敌大瓜皮！';
+            }
+            if (comboLevel >= 5) {
+                announcementText = '毛毛终极宇宙无敌超级大瓜皮！';
+            }
+            if (comboLevel >= 8) {
+                announcementText = '毛毛神话宇宙无敌超级大瓜皮！！';
+            }
+
+            // 语音播报 - 更生动
+            const pitch = 1.2 + (comboLevel - 1) * 0.1;
+            const rate = 1.1 + (comboLevel - 1) * 0.05;
+            speak(announcementText, volume, rate, pitch);
+
+            // 显示字幕
+            showAnnouncement(announcementText, fontSize);
+
+            // 更新连击计数器
+            updateComboCounter();
         }
 
         // 预加载语音列表
@@ -268,8 +401,11 @@
             direction = 'right';
             inputQueue = [];
             score = 0;
+            foodCount = 0;
+            comboLevel = 1;
             gameSpeed = 100;
             document.getElementById('score').textContent = score;
+            updateComboCounter();
             spawnFood();
         }
 
@@ -321,6 +457,7 @@
                 ctx.stroke();
             }
 
+            // 绘制食物
             const gradient = ctx.createRadialGradient(
                 food.x * gridSize + gridSize / 2,
                 food.y * gridSize + gridSize / 2,
@@ -347,6 +484,7 @@
             ctx.fill();
             ctx.shadowBlur = 0;
 
+            // 绘制蛇 - 每个方块带"毛"字
             snake.forEach((segment, index) => {
                 const isHead = index === 0;
                 const alpha = 1 - (index / snake.length) * 0.5;
@@ -386,6 +524,14 @@
                 }
                 ctx.fill();
 
+                // 在方块中间绘制"毛"字
+                ctx.fillStyle = isHead ? '#fff' : `rgba(255, 255, 255, ${alpha})`;
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('毛', segment.x * gridSize + gridSize / 2, segment.y * gridSize + gridSize / 2);
+
+                // 绘制眼睛（仅在头部）
                 if (isHead) {
                     ctx.fillStyle = '#fff';
                     const eyeSize = 3;
@@ -431,6 +577,7 @@
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 30px Arial';
                 ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
                 ctx.fillText('已暂停', canvas.width / 2, canvas.height / 2);
             }
         }
@@ -465,8 +612,8 @@
                 score += 10;
                 document.getElementById('score').textContent = score;
 
-                // 播报"毛毛瓜皮"
-                speak('毛毛瓜皮');
+                // 播报！
+                announceFood();
 
                 if (gameSpeed > 50) {
                     gameSpeed -= 2;
@@ -634,6 +781,7 @@
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 24px Arial';
         ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         ctx.fillText('按空格键或点击开始', canvas.width / 2, canvas.height / 2);
     </script>
 </body>
