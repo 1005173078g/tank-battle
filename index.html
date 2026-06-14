@@ -574,8 +574,8 @@
             enemies.forEach(enemy => {
                 enemy.moveTimer++;
 
-                // 随机改变方向
-                if (enemy.moveTimer > 60 + Math.random() * 60) {
+                // 随机改变方向（每60-120帧改变一次）
+                if (enemy.moveTimer > 60) {
                     enemy.moveTimer = 0;
                     const directions = ['up', 'down', 'left', 'right'];
                     enemy.direction = directions[Math.floor(Math.random() * 4)];
@@ -612,7 +612,6 @@
                 for (const wall of walls) {
                     if (checkCollision(testEnemy, wall)) {
                         canMove = false;
-                        enemy.moveTimer = 100; // 强制改变方向
                         break;
                     }
                 }
@@ -622,7 +621,6 @@
                     for (const other of enemies) {
                         if (other !== enemy && checkCollision(testEnemy, other)) {
                             canMove = false;
-                            enemy.moveTimer = 100;
                             break;
                         }
                     }
@@ -631,10 +629,14 @@
                 // 与玩家碰撞
                 if (canMove && checkCollision(testEnemy, player)) {
                     canMove = false;
-                    enemy.moveTimer = 100;
                 }
 
-                if (canMove) {
+                // 如果无法移动，立即改变方向
+                if (!canMove) {
+                    const directions = ['up', 'down', 'left', 'right'];
+                    enemy.direction = directions[Math.floor(Math.random() * 4)];
+                    enemy.moveTimer = 50; // 很快再次尝试改变方向
+                } else {
                     enemy.x = newX;
                     enemy.y = newY;
                 }
