@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>毛毛瓜皮贪吃蛇</title>
+    <title>双人贪吃蛇</title>
     <style>
         * {
             margin: 0;
@@ -12,135 +12,70 @@
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px;
-        }
-
-        .game-container {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
+            flex-direction: column;
+            gap: 20px;
         }
 
         h1 {
             color: #fff;
-            text-align: center;
+            font-size: 2.5rem;
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .game-container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+
+        .player-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            color: #fff;
+            min-width: 150px;
+            backdrop-filter: blur(10px);
+        }
+
+        .player-info h2 {
+            font-size: 1.3rem;
             margin-bottom: 10px;
-            font-size: 2.5em;
-            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
-        }
-
-        .info-panel {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            color: #fff;
-            font-size: 1.2em;
-        }
-
-        .score, .high-score {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px 20px;
-            border-radius: 10px;
-        }
-
-        /* 播报字幕样式 */
-        .announcement {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 0 0 20px #ff6b6b, 0 0 40px #ff6b6b, 0 0 60px #ff6b6b;
-            pointer-events: none;
-            z-index: 1000;
-            opacity: 0;
-            transition: all 0.3s ease;
-            animation: none;
-        }
-
-        .announcement.show {
-            opacity: 1;
-            animation: announce 1.5s ease-out forwards;
-        }
-
-        @keyframes announce {
-            0% {
-                transform: translate(-50%, -50%) scale(0.5);
-                opacity: 0;
-            }
-            20% {
-                transform: translate(-50%, -50%) scale(1.2);
-                opacity: 1;
-            }
-            80% {
-                transform: translate(-50%, -50%) scale(1);
-                opacity: 1;
-            }
-            100% {
-                transform: translate(-50%, -80%) scale(0.8);
-                opacity: 0;
-            }
-        }
-
-        canvas {
-            border: 3px solid #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
-            display: block;
-            background: #1a1a2e;
-        }
-
-        .controls {
-            margin-top: 20px;
-            color: #fff;
             text-align: center;
-            font-size: 0.9em;
         }
 
-        .controls p {
-            margin: 5px 0;
+        .player-info .score {
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
         }
 
-        .mobile-controls {
-            display: none;
-            margin-top: 20px;
-            gap: 10px;
+        .player-info .controls {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            line-height: 1.6;
         }
 
-        .control-row {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .control-btn {
-            width: 60px;
-            height: 60px;
-            font-size: 24px;
-            border: none;
-            border-radius: 10px;
+        .player-info .controls kbd {
             background: rgba(255, 255, 255, 0.2);
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: monospace;
         }
 
-        .control-btn:active {
-            background: rgba(255, 255, 255, 0.4);
-            transform: scale(0.95);
+        #gameCanvas {
+            border: 3px solid #00ff88;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
         }
 
-        .game-over {
+        .game-over-overlay {
             position: fixed;
             top: 0;
             left: 0;
@@ -151,299 +86,153 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            gap: 20px;
             z-index: 100;
         }
 
-        .game-over h2 {
-            color: #ff6b6b;
-            font-size: 4em;
-            margin-bottom: 20px;
-            text-shadow: 0 0 30px rgba(255, 0, 0, 0.5);
+        .game-over-overlay.show {
+            display: flex;
         }
 
-        .game-over p {
+        .game-over-overlay h2 {
             color: #fff;
-            font-size: 1.5em;
-            margin-bottom: 30px;
+            font-size: 3rem;
         }
 
-        .restart-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
+        .game-over-overlay .winner {
+            color: #00ff88;
+            font-size: 2rem;
+        }
+
+        .game-over-overlay button {
             padding: 15px 40px;
-            font-size: 1.2em;
-            color: #fff;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .restart-btn:hover {
-            transform: scale(1.1);
-            box-shadow: 0 0 30px rgba(255, 255, 255, 0.5);
-        }
-
-        .pause-btn {
-            background: rgba(255, 255, 255, 0.2);
+            font-size: 1.2rem;
+            background: #00ff88;
             border: none;
-            padding: 10px 20px;
-            font-size: 1em;
-            color: #fff;
-            border-radius: 20px;
+            border-radius: 8px;
             cursor: pointer;
-            margin-top: 10px;
-            transition: all 0.3s;
-        }
-
-        .pause-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-        }
-
-        .combo-counter {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 107, 107, 0.9);
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 20px;
-            font-size: 1.2em;
+            color: #1a1a2e;
             font-weight: bold;
-            opacity: 0;
-            transition: all 0.3s;
-            z-index: 100;
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .combo-counter.show {
-            opacity: 1;
+        .game-over-overlay button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
         }
 
-        @media (max-width: 650px) {
-            .mobile-controls {
-                display: block;
-            }
-            .controls {
-                display: none;
-            }
+        .instructions {
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <!-- 播报字幕 -->
-    <div class="announcement" id="announcement">毛毛宇宙无敌大瓜皮！</div>
-
-    <!-- 连击计数器 -->
-    <div class="combo-counter" id="comboCounter">🔥 连击 x1</div>
+    <h1>🐍 双人贪吃蛇 🐍</h1>
 
     <div class="game-container">
-        <h1>🐍 毛毛瓜皮贪吃蛇</h1>
-        <div class="info-panel">
-            <div class="score">得分: <span id="score">0</span></div>
-            <div class="high-score">最高分: <span id="highScore">0</span></div>
-        </div>
-        <canvas id="gameCanvas" width="400" height="400"></canvas>
-        <div class="controls">
-            <p>🎯 使用 <strong>方向键</strong> 或 <strong>WASD</strong> 控制方向</p>
-            <p>🍎 吃到食物得分，每5个升级播报！</p>
-            <p>⏸️ 按 <strong>空格键</strong> 暂停游戏</p>
-        </div>
-        <div class="mobile-controls">
-            <div class="control-row">
-                <button class="control-btn" onclick="changeDirection('up')">⬆️</button>
-            </div>
-            <div class="control-row">
-                <button class="control-btn" onclick="changeDirection('left')">⬅️</button>
-                <button class="control-btn" onclick="changeDirection('down')">⬇️</button>
-                <button class="control-btn" onclick="changeDirection('right')">➡️</button>
+        <div class="player-info">
+            <h2>🟢 玩家一</h2>
+            <div class="score" id="score1">0</div>
+            <div class="controls">
+                <kbd>W</kbd> 上<br>
+                <kbd>S</kbd> 下<br>
+                <kbd>A</kbd> 左<br>
+                <kbd>D</kbd> 右
             </div>
         </div>
-        <button class="pause-btn" onclick="togglePause()">⏸️ 暂停/继续</button>
+
+        <canvas id="gameCanvas" width="600" height="500"></canvas>
+
+        <div class="player-info">
+            <h2>🔵 玩家二</h2>
+            <div class="score" id="score2">0</div>
+            <div class="controls">
+                <kbd>↑</kbd> 上<br>
+                <kbd>↓</kbd> 下<br>
+                <kbd>←</kbd> 左<br>
+                <kbd>→</kbd> 右
+            </div>
+        </div>
     </div>
 
-    <div class="game-over" id="gameOver">
-        <h2>游戏结束</h2>
-        <p>最终得分: <span id="finalScore">0</span></p>
-        <button class="restart-btn" onclick="restartGame()">🔄 重新开始</button>
+    <p class="instructions">先吃到食物得1分，撞墙、撞自己或撞对方则游戏结束</p>
+
+    <div class="game-over-overlay" id="gameOverOverlay">
+        <h2>游戏结束!</h2>
+        <div class="winner" id="winnerText"></div>
+        <button onclick="restartGame()">再来一局</button>
     </div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-
         const gridSize = 20;
         const tileCount = canvas.width / gridSize;
 
-        let snake = [];
-        let food = {};
-        let direction = 'right';
-        let inputQueue = [];
-        let score = 0;
-        let highScore = 0;
-        let foodCount = 0; // 记录吃到的食物数量
-        let comboLevel = 1; // 连击等级
+        // Game state
+        let snake1, snake2, food, score1, score2, gameOver, gameLoop;
 
-        try {
-            highScore = localStorage.getItem('snakeHighScore') || 0;
-        } catch (e) {
-            console.warn('LocalStorage access denied');
-        }
+        // Direction objects
+        const directions = {
+            UP: { x: 0, y: -1 },
+            DOWN: { x: 0, y: 1 },
+            LEFT: { x: -1, y: 0 },
+            RIGHT: { x: 1, y: 0 }
+        };
 
-        let gameRunning = false;
-        let gamePaused = false;
-        let gameSpeed = 100;
-        let lastTime = 0;
-        let animationId = null;
-
-        document.getElementById('highScore').textContent = highScore;
-
-        // 语音播报函数
-        function speak(text, volume = 1.0, rate = 1.2, pitch = 1.3) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'zh-CN';
-                utterance.rate = rate; // 语速
-                utterance.pitch = pitch; // 音调 - 更生动
-                utterance.volume = volume; // 音量
-
-                const voices = window.speechSynthesis.getVoices();
-                const chineseVoice = voices.find(voice => voice.lang.includes('zh'));
-                if (chineseVoice) {
-                    utterance.voice = chineseVoice;
-                }
-
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        // 显示字幕播报
-        function showAnnouncement(text, fontSize = 48) {
-            const announcement = document.getElementById('announcement');
-            announcement.textContent = text;
-            announcement.style.fontSize = fontSize + 'px';
-            announcement.classList.remove('show');
-
-            // 强制重绘以触发动画
-            void announcement.offsetWidth;
-            announcement.classList.add('show');
-
-            // 动画结束后隐藏
-            setTimeout(() => {
-                announcement.classList.remove('show');
-            }, 1500);
-        }
-
-        // 更新连击计数器
-        function updateComboCounter() {
-            const counter = document.getElementById('comboCounter');
-            if (comboLevel > 1) {
-                counter.textContent = `🔥 连击 x${comboLevel}`;
-                counter.classList.add('show');
-            } else {
-                counter.classList.remove('show');
-            }
-        }
-
-        // 播报吃到食物
-        function announceFood() {
-            foodCount++;
-
-            // 每5个食物升级
-            if (foodCount % 5 === 0) {
-                comboLevel = Math.min(comboLevel + 1, 10);
-            }
-
-            // 根据连击等级调整音量和字体大小
-            const baseVolume = 1.0;
-            const baseFontSize = 48;
-            const volume = Math.min(baseVolume + (comboLevel - 1) * 0.1, 1.5);
-            const fontSize = Math.min(baseFontSize + (comboLevel - 1) * 8, 96);
-
-            // 根据等级显示不同的播报内容
-            let announcementText = '毛毛宇宙无敌大瓜皮！';
-            if (comboLevel >= 3) {
-                announcementText = '毛毛超级宇宙无敌大瓜皮！';
-            }
-            if (comboLevel >= 5) {
-                announcementText = '毛毛终极宇宙无敌超级大瓜皮！';
-            }
-            if (comboLevel >= 8) {
-                announcementText = '毛毛神话宇宙无敌超级大瓜皮！！';
-            }
-
-            // 语音播报 - 更生动
-            const pitch = 1.2 + (comboLevel - 1) * 0.1;
-            const rate = 1.1 + (comboLevel - 1) * 0.05;
-            speak(announcementText, volume, rate, pitch);
-
-            // 显示字幕
-            showAnnouncement(announcementText, fontSize);
-
-            // 更新连击计数器
-            updateComboCounter();
-        }
-
-        // 预加载语音列表
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => {
-                window.speechSynthesis.getVoices();
-            };
-        }
-
+        // Initialize game
         function initGame() {
-            snake = [
-                { x: 5, y: 10 },
-                { x: 4, y: 10 },
-                { x: 3, y: 10 }
+            snake1 = [
+                { x: 5, y: Math.floor(tileCount / 2) },
+                { x: 4, y: Math.floor(tileCount / 2) },
+                { x: 3, y: Math.floor(tileCount / 2) }
             ];
-            direction = 'right';
-            inputQueue = [];
-            score = 0;
-            foodCount = 0;
-            comboLevel = 1;
-            gameSpeed = 100;
-            document.getElementById('score').textContent = score;
-            updateComboCounter();
+            snake2 = [
+                { x: tileCount - 6, y: Math.floor(tileCount / 2) },
+                { x: tileCount - 5, y: Math.floor(tileCount / 2) },
+                { x: tileCount - 4, y: Math.floor(tileCount / 2) }
+            ];
+
+            snake1.direction = directions.RIGHT;
+            snake2.direction = directions.LEFT;
+            snake1.nextDirection = directions.RIGHT;
+            snake2.nextDirection = directions.LEFT;
+
+            score1 = 0;
+            score2 = 0;
+            gameOver = false;
+
+            document.getElementById('score1').textContent = score1;
+            document.getElementById('score2').textContent = score2;
+            document.getElementById('gameOverOverlay').classList.remove('show');
+
             spawnFood();
         }
 
+        // Spawn food at random position not occupied by snakes
         function spawnFood() {
-            let attempts = 0;
-            const maxAttempts = 100;
-            let validPosition = false;
-
-            while (attempts < maxAttempts && !validPosition) {
-                food = {
+            let newFood;
+            do {
+                newFood = {
                     x: Math.floor(Math.random() * tileCount),
                     y: Math.floor(Math.random() * tileCount)
                 };
-                validPosition = !snake.some(segment => segment.x === food.x && segment.y === food.y);
-                attempts++;
-            }
-
-            if (!validPosition) {
-                const emptyTiles = [];
-                for (let x = 0; x < tileCount; x++) {
-                    for (let y = 0; y < tileCount; y++) {
-                        if (!snake.some(segment => segment.x === x && segment.y === y)) {
-                            emptyTiles.push({ x, y });
-                        }
-                    }
-                }
-                if (emptyTiles.length > 0) {
-                    food = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
-                } else {
-                    gameOver(true);
-                }
-            }
+            } while (
+                snake1.some(seg => seg.x === newFood.x && seg.y === newFood.y) ||
+                snake2.some(seg => seg.x === newFood.x && seg.y === newFood.y)
+            );
+            food = newFood;
         }
 
+        // Draw everything on canvas
         function draw() {
-            ctx.fillStyle = '#1a1a2e';
+            // Clear canvas
+            ctx.fillStyle = '#0f0f23';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            // Draw grid
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
             ctx.lineWidth = 1;
             for (let i = 0; i <= tileCount; i++) {
@@ -457,18 +246,10 @@
                 ctx.stroke();
             }
 
-            // 绘制食物
-            const gradient = ctx.createRadialGradient(
-                food.x * gridSize + gridSize / 2,
-                food.y * gridSize + gridSize / 2,
-                0,
-                food.x * gridSize + gridSize / 2,
-                food.y * gridSize + gridSize / 2,
-                gridSize / 2
-            );
-            gradient.addColorStop(0, '#ff6b6b');
-            gradient.addColorStop(1, '#ee5a5a');
-            ctx.fillStyle = gradient;
+            // Draw food
+            ctx.fillStyle = '#ff6b6b';
+            ctx.shadowColor = '#ff6b6b';
+            ctx.shadowBlur = 15;
             ctx.beginPath();
             ctx.arc(
                 food.x * gridSize + gridSize / 2,
@@ -478,311 +259,268 @@
                 Math.PI * 2
             );
             ctx.fill();
-
-            ctx.shadowColor = '#ff6b6b';
-            ctx.shadowBlur = 10;
-            ctx.fill();
             ctx.shadowBlur = 0;
 
-            // 绘制蛇 - 每个方块带"毛"字
-            snake.forEach((segment, index) => {
-                const isHead = index === 0;
-                const alpha = 1 - (index / snake.length) * 0.5;
+            // Draw snake 1 (green)
+            snake1.forEach((segment, index) => {
+                const gradient = ctx.createRadialGradient(
+                    segment.x * gridSize + gridSize / 2,
+                    segment.y * gridSize + gridSize / 2,
+                    0,
+                    segment.x * gridSize + gridSize / 2,
+                    segment.y * gridSize + gridSize / 2,
+                    gridSize / 2
+                );
+                gradient.addColorStop(0, index === 0 ? '#00ff88' : '#00cc6a');
+                gradient.addColorStop(1, index === 0 ? '#00cc6a' : '#009955');
 
-                if (isHead) {
-                    const headGradient = ctx.createRadialGradient(
-                        segment.x * gridSize + gridSize / 2,
-                        segment.y * gridSize + gridSize / 2,
-                        0,
-                        segment.x * gridSize + gridSize / 2,
-                        segment.y * gridSize + gridSize / 2,
-                        gridSize / 2
-                    );
-                    headGradient.addColorStop(0, '#4ecdc4');
-                    headGradient.addColorStop(1, '#44a08d');
-                    ctx.fillStyle = headGradient;
-                } else {
-                    ctx.fillStyle = `rgba(78, 205, 196, ${alpha})`;
-                }
-
+                ctx.fillStyle = gradient;
                 ctx.beginPath();
-                if (ctx.roundRect) {
-                    ctx.roundRect(
-                        segment.x * gridSize + 1,
-                        segment.y * gridSize + 1,
-                        gridSize - 2,
-                        gridSize - 2,
-                        4
-                    );
-                } else {
-                    ctx.fillRect(
-                        segment.x * gridSize + 1,
-                        segment.y * gridSize + 1,
-                        gridSize - 2,
-                        gridSize - 2
-                    );
-                }
+                ctx.roundRect(
+                    segment.x * gridSize + 1,
+                    segment.y * gridSize + 1,
+                    gridSize - 2,
+                    gridSize - 2,
+                    index === 0 ? 6 : 4
+                );
                 ctx.fill();
 
-                // 在方块中间绘制"毛"字
-                ctx.fillStyle = isHead ? '#fff' : `rgba(255, 255, 255, ${alpha})`;
-                ctx.font = 'bold 12px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('毛', segment.x * gridSize + gridSize / 2, segment.y * gridSize + gridSize / 2);
-
-                // 绘制眼睛（仅在头部）
-                if (isHead) {
+                // Draw eyes on head
+                if (index === 0) {
                     ctx.fillStyle = '#fff';
-                    const eyeSize = 3;
-                    let eye1X, eye1Y, eye2X, eye2Y;
-
-                    switch (direction) {
-                        case 'right':
-                            eye1X = segment.x * gridSize + gridSize - 6;
-                            eye1Y = segment.y * gridSize + 5;
-                            eye2X = segment.x * gridSize + gridSize - 6;
-                            eye2Y = segment.y * gridSize + gridSize - 7;
-                            break;
-                        case 'left':
-                            eye1X = segment.x * gridSize + 4;
-                            eye1Y = segment.y * gridSize + 5;
-                            eye2X = segment.x * gridSize + 4;
-                            eye2Y = segment.y * gridSize + gridSize - 7;
-                            break;
-                        case 'up':
-                            eye1X = segment.x * gridSize + 5;
-                            eye1Y = segment.y * gridSize + 4;
-                            eye2X = segment.x * gridSize + gridSize - 7;
-                            eye2Y = segment.y * gridSize + 4;
-                            break;
-                        case 'down':
-                            eye1X = segment.x * gridSize + 5;
-                            eye1Y = segment.y * gridSize + gridSize - 6;
-                            eye2X = segment.x * gridSize + gridSize - 7;
-                            eye2Y = segment.y * gridSize + gridSize - 6;
-                            break;
-                    }
-
+                    const eyeOffset = gridSize / 4;
                     ctx.beginPath();
-                    ctx.arc(eye1X, eye1Y, eyeSize, 0, Math.PI * 2);
-                    ctx.arc(eye2X, eye2Y, eyeSize, 0, Math.PI * 2);
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2 - eyeOffset,
+                        segment.y * gridSize + gridSize / 2 - eyeOffset / 2,
+                        3,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2 + eyeOffset,
+                        segment.y * gridSize + gridSize / 2 - eyeOffset / 2,
+                        3,
+                        0,
+                        Math.PI * 2
+                    );
                     ctx.fill();
                 }
             });
 
-            if (gamePaused) {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 30px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText('已暂停', canvas.width / 2, canvas.height / 2);
-            }
-        }
+            // Draw snake 2 (blue)
+            snake2.forEach((segment, index) => {
+                const gradient = ctx.createRadialGradient(
+                    segment.x * gridSize + gridSize / 2,
+                    segment.y * gridSize + gridSize / 2,
+                    0,
+                    segment.x * gridSize + gridSize / 2,
+                    segment.y * gridSize + gridSize / 2,
+                    gridSize / 2
+                );
+                gradient.addColorStop(0, index === 0 ? '#00bfff' : '#0099cc');
+                gradient.addColorStop(1, index === 0 ? '#0099cc' : '#007799');
 
-        function update() {
-            if (inputQueue.length > 0) {
-                direction = inputQueue.shift();
-            }
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.roundRect(
+                    segment.x * gridSize + 1,
+                    segment.y * gridSize + 1,
+                    gridSize - 2,
+                    gridSize - 2,
+                    index === 0 ? 6 : 4
+                );
+                ctx.fill();
 
-            const head = { ...snake[0] };
-
-            switch (direction) {
-                case 'up': head.y--; break;
-                case 'down': head.y++; break;
-                case 'left': head.x--; break;
-                case 'right': head.x++; break;
-            }
-
-            if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
-                gameOver();
-                return;
-            }
-
-            if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-                gameOver();
-                return;
-            }
-
-            snake.unshift(head);
-
-            if (head.x === food.x && head.y === food.y) {
-                score += 10;
-                document.getElementById('score').textContent = score;
-
-                // 播报！
-                announceFood();
-
-                if (gameSpeed > 50) {
-                    gameSpeed -= 2;
+                // Draw eyes on head
+                if (index === 0) {
+                    ctx.fillStyle = '#fff';
+                    const eyeOffset = gridSize / 4;
+                    ctx.beginPath();
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2 - eyeOffset,
+                        segment.y * gridSize + gridSize / 2 - eyeOffset / 2,
+                        3,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.arc(
+                        segment.x * gridSize + gridSize / 2 + eyeOffset,
+                        segment.y * gridSize + gridSize / 2 - eyeOffset / 2,
+                        3,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
                 }
-
-                spawnFood();
-            } else {
-                snake.pop();
-            }
+            });
         }
 
-        function gameLoop(timestamp) {
-            if (!gameRunning) return;
+        // Update game state
+        function update() {
+            if (gameOver) return;
 
-            if (!lastTime) lastTime = timestamp;
-            const elapsed = timestamp - lastTime;
+            // Apply directions
+            snake1.direction = snake1.nextDirection;
+            snake2.direction = snake2.nextDirection;
 
-            if (elapsed >= gameSpeed && !gamePaused) {
-                update();
-                lastTime = timestamp;
-            }
-
-            draw();
-            animationId = requestAnimationFrame(gameLoop);
-        }
-
-        function startGame() {
-            if (gameRunning) return;
-            initGame();
-            gameRunning = true;
-            gamePaused = false;
-            lastTime = 0;
-            document.getElementById('gameOver').style.display = 'none';
-            animationId = requestAnimationFrame(gameLoop);
-        }
-
-        function gameOver(win = false) {
-            gameRunning = false;
-            if (animationId) {
-                cancelAnimationFrame(animationId);
-            }
-
-            if (score > highScore) {
-                highScore = score;
-                try {
-                    localStorage.setItem('snakeHighScore', highScore);
-                } catch (e) {}
-                document.getElementById('highScore').textContent = highScore;
-            }
-
-            document.getElementById('gameOver').style.display = 'flex';
-            document.getElementById('finalScore').textContent = score;
-
-            const title = document.querySelector('.game-over h2');
-            title.textContent = win ? '🎉 恭喜通关！' : '游戏结束';
-            title.style.color = win ? '#4ecdc4' : '#ff6b6b';
-        }
-
-        function restartGame() {
-            startGame();
-        }
-
-        function togglePause() {
-            if (!gameRunning) return;
-            gamePaused = !gamePaused;
-            if (!gamePaused) {
-                lastTime = performance.now();
-            }
-        }
-
-        function changeDirection(newDir) {
-            const opposites = {
-                'up': 'down',
-                'down': 'up',
-                'left': 'right',
-                'right': 'left'
+            // Calculate new heads
+            const head1 = {
+                x: snake1[0].x + snake1.direction.x,
+                y: snake1[1].y + snake1.direction.y
+            };
+            const head2 = {
+                x: snake2[0].x + snake2.direction.x,
+                y: snake2[0].y + snake2.direction.y
             };
 
-            const lastPlannedDir = inputQueue.length > 0 ? inputQueue[inputQueue.length - 1] : direction;
-
-            if (newDir !== opposites[lastPlannedDir] && newDir !== lastPlannedDir && inputQueue.length < 3) {
-                inputQueue.push(newDir);
+            // Check wall collision
+            if (head1.x < 0 || head1.x >= tileCount || head1.y < 0 || head1.y >= tileCount) {
+                endGame('玩家二 🔵 获胜！');
+                return;
             }
+            if (head2.x < 0 || head2.x >= tileCount || head2.y < 0 || head2.y >= tileCount) {
+                endGame('玩家一 🟢 获胜！');
+                return;
+            }
+
+            // Check self collision
+            if (snake1.some(seg => seg.x === head1.x && seg.y === head1.y)) {
+                endGame('玩家二 🔵 获胜！');
+                return;
+            }
+            if (snake2.some(seg => seg.x === head2.x && seg.y === head2.y)) {
+                endGame('玩家一 🟢 获胜！');
+                return;
+            }
+
+            // Check collision with other snake
+            if (snake2.some(seg => seg.x === head1.x && seg.y === head1.y)) {
+                endGame('玩家二 🔵 获胜！');
+                return;
+            }
+            if (snake1.some(seg => seg.x === head2.x && seg.y === head2.y)) {
+                endGame('玩家一 🟢 获胜！');
+                return;
+            }
+
+            // Check head-to-head collision
+            if (head1.x === head2.x && head1.y === head2.y) {
+                endGame('平局！');
+                return;
+            }
+
+            // Move snakes
+            snake1.unshift(head1);
+            snake2.unshift(head2);
+
+            // Check food collision
+            let ate1 = false, ate2 = false;
+            if (head1.x === food.x && head1.y === food.y) {
+                score1++;
+                ate1 = true;
+            }
+            if (head2.x === food.x && head2.y === food.y) {
+                score2++;
+                ate2 = true;
+            }
+
+            if (ate1 || ate2) {
+                if (!ate1) snake1.pop();
+                if (!ate2) snake2.pop();
+                spawnFood();
+            } else {
+                snake1.pop();
+                snake2.pop();
+            }
+
+            document.getElementById('score1').textContent = score1;
+            document.getElementById('score2').textContent = score2;
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (!gameRunning && e.key !== ' ' && e.key !== 'Enter') return;
+        // End the game
+        function endGame(winnerMsg) {
+            gameOver = true;
+            clearInterval(gameLoop);
+            document.getElementById('winnerText').textContent = winnerMsg;
+            document.getElementById('gameOverOverlay').classList.add('show');
+        }
 
-            switch (e.key.toLowerCase()) {
-                case 'arrowup':
+        // Restart the game
+        function restartGame() {
+            clearInterval(gameLoop);
+            initGame();
+            gameLoop = setInterval(() => {
+                update();
+                draw();
+            }, 100);
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+
+            // Prevent default for arrow keys to avoid scrolling
+            if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
+                e.preventDefault();
+            }
+
+            // Player 1 - WASD
+            switch (key) {
                 case 'w':
-                    e.preventDefault();
-                    changeDirection('up');
-                    break;
-                case 'arrowdown':
-                case 's':
-                    e.preventDefault();
-                    changeDirection('down');
-                    break;
-                case 'arrowleft':
-                case 'a':
-                    e.preventDefault();
-                    changeDirection('left');
-                    break;
-                case 'arrowright':
-                case 'd':
-                    e.preventDefault();
-                    changeDirection('right');
-                    break;
-                case ' ':
-                    e.preventDefault();
-                    if (gameRunning) {
-                        togglePause();
-                    } else {
-                        startGame();
+                    if (snake1.direction !== directions.DOWN) {
+                        snake1.nextDirection = directions.UP;
                     }
                     break;
-                case 'enter':
-                    e.preventDefault();
-                    if (!gameRunning) {
-                        startGame();
+                case 's':
+                    if (snake1.direction !== directions.UP) {
+                        snake1.nextDirection = directions.DOWN;
+                    }
+                    break;
+                case 'a':
+                    if (snake1.direction !== directions.RIGHT) {
+                        snake1.nextDirection = directions.LEFT;
+                    }
+                    break;
+                case 'd':
+                    if (snake1.direction !== directions.LEFT) {
+                        snake1.nextDirection = directions.RIGHT;
+                    }
+                    break;
+            }
+
+            // Player 2 - Arrow keys
+            switch (e.key) {
+                case 'ArrowUp':
+                    if (snake2.direction !== directions.DOWN) {
+                        snake2.nextDirection = directions.UP;
+                    }
+                    break;
+                case 'ArrowDown':
+                    if (snake2.direction !== directions.UP) {
+                        snake2.nextDirection = directions.DOWN;
+                    }
+                    break;
+                case 'ArrowLeft':
+                    if (snake2.direction !== directions.RIGHT) {
+                        snake2.nextDirection = directions.LEFT;
+                    }
+                    break;
+                case 'ArrowRight':
+                    if (snake2.direction !== directions.LEFT) {
+                        snake2.nextDirection = directions.RIGHT;
                     }
                     break;
             }
         });
 
-        let touchStartX = 0;
-        let touchStartY = 0;
-
-        canvas.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            e.preventDefault();
-        }, { passive: false });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-        }, { passive: false });
-
-        canvas.addEventListener('touchend', (e) => {
-            if (!gameRunning) return;
-
-            const touchEndX = e.changedTouches[0].clientX;
-            const touchEndY = e.changedTouches[0].clientY;
-
-            const dx = touchEndX - touchStartX;
-            const dy = touchEndY - touchStartY;
-
-            if (Math.abs(dx) > Math.abs(dy)) {
-                if (dx > 30) changeDirection('right');
-                else if (dx < -30) changeDirection('left');
-            } else {
-                if (dy > 30) changeDirection('down');
-                else if (dy < -30) changeDirection('up');
-            }
-
-            e.preventDefault();
-        }, { passive: false });
-
+        // Start the game
         initGame();
+        gameLoop = setInterval(() => {
+            update();
+            draw();
+        }, 100);
         draw();
-
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 24px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('按空格键或点击开始', canvas.width / 2, canvas.height / 2);
     </script>
 </body>
 </html>
