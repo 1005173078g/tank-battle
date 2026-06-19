@@ -56,6 +56,11 @@
             margin-bottom: 15px;
         }
 
+        .player-info .score.goal {
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
         .player-info .controls {
             font-size: 0.9rem;
             opacity: 0.8;
@@ -126,6 +131,29 @@
             text-align: center;
             font-size: 0.9rem;
         }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.p1 {
+            background: linear-gradient(90deg, #00ff88, #00cc6a);
+        }
+
+        .progress-fill.p2 {
+            background: linear-gradient(90deg, #00bfff, #0099cc);
+        }
     </style>
 </head>
 <body>
@@ -134,7 +162,10 @@
     <div class="game-container">
         <div class="player-info">
             <h2>🟢 玩家一</h2>
-            <div class="score" id="score1">0</div>
+            <div class="score" id="score1">0 / 25</div>
+            <div class="progress-bar">
+                <div class="progress-fill p1" id="progress1" style="width: 0%"></div>
+            </div>
             <div class="controls">
                 <kbd>W</kbd> 上<br>
                 <kbd>S</kbd> 下<br>
@@ -147,7 +178,10 @@
 
         <div class="player-info">
             <h2>🔵 玩家二</h2>
-            <div class="score" id="score2">0</div>
+            <div class="score" id="score2">0 / 25</div>
+            <div class="progress-bar">
+                <div class="progress-fill p2" id="progress2" style="width: 0%"></div>
+            </div>
             <div class="controls">
                 <kbd>↑</kbd> 上<br>
                 <kbd>↓</kbd> 下<br>
@@ -157,7 +191,7 @@
         </div>
     </div>
 
-    <p class="instructions">先吃到食物得1分，撞墙、撞自己或撞对方则游戏结束</p>
+    <p class="instructions">先得25分者获胜！撞墙、撞自己或撞对方则对方获胜</p>
 
     <div class="game-over-overlay" id="gameOverOverlay">
         <h2>游戏结束!</h2>
@@ -170,6 +204,26 @@
         const ctx = canvas.getContext('2d');
         const gridSize = 20;
         const tileCount = canvas.width / gridSize;
+        const WIN_SCORE = 25;
+
+        // Polyfill for roundRect (for older browsers)
+        if (!ctx.roundRect) {
+            CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+                if (typeof r === 'number') {
+                    r = { tl: r, tr: r, br: r, bl: r };
+                }
+                this.moveTo(x + r.tl, y);
+                this.lineTo(x + w - r.tr, y);
+                this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+                this.lineTo(x + w, y + h - r.br);
+                this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+                this.lineTo(x + r.bl, y + h);
+                this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+                this.lineTo(x, y + r.tl);
+                this.quadraticCurveTo(x, y, x + r.tl, y);
+                this.closePath();
+            };
+        }
 
         // Game state
         let snake1, snake2, food, score1, score2, gameOver, gameLoop;
@@ -204,26 +258,43 @@
             score2 = 0;
             gameOver = false;
 
-            document.getElementById('score1').textContent = score1;
-            document.getElementById('score2').textContent = score2;
+            updateScoreDisplay();
             document.getElementById('gameOverOverlay').classList.remove('show');
 
             spawnFood();
         }
 
+        // Update score display
+        function updateScoreDisplay() {
+            document.getElementById('score1').textContent = score1 + ' / ' + WIN_SCORE;
+            document.getElementById('score2').textContent = score2 + ' / ' + WIN_SCORE;
+            document.getElementById('progress1').style.width = (score1 / WIN_SCORE * 100) + '%';
+            document.getElementById('progress2').style.width = (score2 / WIN_SCORE * 100) + '%';
+        }
+
         // Spawn food at random position not occupied by snakes
         function spawnFood() {
             let newFood;
+            let attempts = 0;
             do {
                 newFood = {
                     x: Math.floor(Math.random() * tileCount),
                     y: Math.floor(Math.random() * tileCount)
                 };
+                attempts++;
             } while (
-                snake1.some(seg => seg.x === newFood.x && seg.y === newFood.y) ||
-                snake2.some(seg => seg.x === newFood.x && seg.y === newFood.y)
+                attempts < 1000 &&
+                (snake1.some(seg => seg.x === newFood.x && seg.y === newFood.y) ||
+                snake2.some(seg => seg.x === newFood.x && seg.y === newFood.y))
             );
             food = newFood;
+        }
+
+        // Draw rounded rectangle helper
+        function drawRoundedRect(x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.roundRect(x, y, width, height, radius);
+            ctx.fill();
         }
 
         // Draw everything on canvas
@@ -263,30 +334,19 @@
 
             // Draw snake 1 (green)
             snake1.forEach((segment, index) => {
-                const gradient = ctx.createRadialGradient(
-                    segment.x * gridSize + gridSize / 2,
-                    segment.y * gridSize + gridSize / 2,
-                    0,
-                    segment.x * gridSize + gridSize / 2,
-                    segment.y * gridSize + gridSize / 2,
-                    gridSize / 2
-                );
-                gradient.addColorStop(0, index === 0 ? '#00ff88' : '#00cc6a');
-                gradient.addColorStop(1, index === 0 ? '#00cc6a' : '#009955');
+                const isHead = index === 0;
+                ctx.fillStyle = isHead ? '#00ff88' : '#00cc6a';
 
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.roundRect(
+                drawRoundedRect(
                     segment.x * gridSize + 1,
                     segment.y * gridSize + 1,
                     gridSize - 2,
                     gridSize - 2,
-                    index === 0 ? 6 : 4
+                    isHead ? 6 : 4
                 );
-                ctx.fill();
 
                 // Draw eyes on head
-                if (index === 0) {
+                if (isHead) {
                     ctx.fillStyle = '#fff';
                     const eyeOffset = gridSize / 4;
                     ctx.beginPath();
@@ -297,6 +357,8 @@
                         0,
                         Math.PI * 2
                     );
+                    ctx.fill();
+                    ctx.beginPath();
                     ctx.arc(
                         segment.x * gridSize + gridSize / 2 + eyeOffset,
                         segment.y * gridSize + gridSize / 2 - eyeOffset / 2,
@@ -310,30 +372,19 @@
 
             // Draw snake 2 (blue)
             snake2.forEach((segment, index) => {
-                const gradient = ctx.createRadialGradient(
-                    segment.x * gridSize + gridSize / 2,
-                    segment.y * gridSize + gridSize / 2,
-                    0,
-                    segment.x * gridSize + gridSize / 2,
-                    segment.y * gridSize + gridSize / 2,
-                    gridSize / 2
-                );
-                gradient.addColorStop(0, index === 0 ? '#00bfff' : '#0099cc');
-                gradient.addColorStop(1, index === 0 ? '#0099cc' : '#007799');
+                const isHead = index === 0;
+                ctx.fillStyle = isHead ? '#00bfff' : '#0099cc';
 
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.roundRect(
+                drawRoundedRect(
                     segment.x * gridSize + 1,
                     segment.y * gridSize + 1,
                     gridSize - 2,
                     gridSize - 2,
-                    index === 0 ? 6 : 4
+                    isHead ? 6 : 4
                 );
-                ctx.fill();
 
                 // Draw eyes on head
-                if (index === 0) {
+                if (isHead) {
                     ctx.fillStyle = '#fff';
                     const eyeOffset = gridSize / 4;
                     ctx.beginPath();
@@ -344,6 +395,8 @@
                         0,
                         Math.PI * 2
                     );
+                    ctx.fill();
+                    ctx.beginPath();
                     ctx.arc(
                         segment.x * gridSize + gridSize / 2 + eyeOffset,
                         segment.y * gridSize + gridSize / 2 - eyeOffset / 2,
@@ -367,7 +420,7 @@
             // Calculate new heads
             const head1 = {
                 x: snake1[0].x + snake1.direction.x,
-                y: snake1[1].y + snake1.direction.y
+                y: snake1[0].y + snake1.direction.y
             };
             const head2 = {
                 x: snake2[0].x + snake2.direction.x,
@@ -376,37 +429,37 @@
 
             // Check wall collision
             if (head1.x < 0 || head1.x >= tileCount || head1.y < 0 || head1.y >= tileCount) {
-                endGame('玩家二 🔵 获胜！');
+                endGame('玩家二 🔵 获胜！(玩家一撞墙)', 'player2');
                 return;
             }
             if (head2.x < 0 || head2.x >= tileCount || head2.y < 0 || head2.y >= tileCount) {
-                endGame('玩家一 🟢 获胜！');
+                endGame('玩家一 🟢 获胜！(玩家二撞墙)', 'player1');
                 return;
             }
 
-            // Check self collision
-            if (snake1.some(seg => seg.x === head1.x && seg.y === head1.y)) {
-                endGame('玩家二 🔵 获胜！');
+            // Check self collision (exclude tail since it will move)
+            if (snake1.slice(0, -1).some(seg => seg.x === head1.x && seg.y === head1.y)) {
+                endGame('玩家二 🔵 获胜！(玩家一撞自己)', 'player2');
                 return;
             }
-            if (snake2.some(seg => seg.x === head2.x && seg.y === head2.y)) {
-                endGame('玩家一 🟢 获胜！');
+            if (snake2.slice(0, -1).some(seg => seg.x === head2.x && seg.y === head2.y)) {
+                endGame('玩家一 🟢 获胜！(玩家二撞自己)', 'player1');
                 return;
             }
 
-            // Check collision with other snake
-            if (snake2.some(seg => seg.x === head1.x && seg.y === head1.y)) {
-                endGame('玩家二 🔵 获胜！');
+            // Check collision with other snake (exclude tails since they will move)
+            if (snake2.slice(0, -1).some(seg => seg.x === head1.x && seg.y === head1.y)) {
+                endGame('玩家二 🔵 获胜！(玩家一撞对方)', 'player2');
                 return;
             }
-            if (snake1.some(seg => seg.x === head2.x && seg.y === head2.y)) {
-                endGame('玩家一 🟢 获胜！');
+            if (snake1.slice(0, -1).some(seg => seg.x === head2.x && seg.y === head2.y)) {
+                endGame('玩家一 🟢 获胜！(玩家二撞对方)', 'player1');
                 return;
             }
 
             // Check head-to-head collision
             if (head1.x === head2.x && head1.y === head2.y) {
-                endGame('平局！');
+                endGame('平局！(头对头碰撞)', 'draw');
                 return;
             }
 
@@ -434,12 +487,21 @@
                 snake2.pop();
             }
 
-            document.getElementById('score1').textContent = score1;
-            document.getElementById('score2').textContent = score2;
+            updateScoreDisplay();
+
+            // Check win score
+            if (score1 >= WIN_SCORE) {
+                endGame('玩家一 🟢 获胜！(达到25分)', 'player1');
+                return;
+            }
+            if (score2 >= WIN_SCORE) {
+                endGame('玩家二 🔵 获胜！(达到25分)', 'player2');
+                return;
+            }
         }
 
         // End the game
-        function endGame(winnerMsg) {
+        function endGame(winnerMsg, winner) {
             gameOver = true;
             clearInterval(gameLoop);
             document.getElementById('winnerText').textContent = winnerMsg;
