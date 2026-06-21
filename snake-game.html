@@ -20,40 +20,47 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             flex-direction: column;
             gap: 20px;
+            padding: 15px;
+            overflow: auto;
         }
 
         h1 {
             color: #fff;
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
             text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
         }
 
         .game-container {
             display: flex;
-            gap: 40px;
+            gap: 20px;
             align-items: flex-start;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 95vw;
         }
 
         .player-info {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 15px;
-            padding: 20px;
+            padding: 15px;
             color: #fff;
-            min-width: 150px;
+            min-width: 130px;
+            max-width: 180px;
             backdrop-filter: blur(10px);
+            flex: 0 1 auto;
         }
 
         .player-info h2 {
-            font-size: 1.3rem;
-            margin-bottom: 10px;
+            font-size: clamp(1rem, 3vw, 1.3rem);
+            margin-bottom: 8px;
             text-align: center;
         }
 
         .player-info .score {
-            font-size: 2rem;
+            font-size: clamp(1.2rem, 4vw, 2rem);
             font-weight: bold;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .player-info .score.goal {
@@ -62,7 +69,7 @@
         }
 
         .player-info .controls {
-            font-size: 0.9rem;
+            font-size: clamp(0.7rem, 2vw, 0.9rem);
             opacity: 0.8;
             line-height: 1.6;
         }
@@ -78,6 +85,12 @@
             border: 3px solid #00ff88;
             border-radius: 10px;
             box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+            max-width: 90vw;
+            max-height: 70vh;
+            width: auto;
+            height: auto;
+            aspect-ratio: 6 / 5;
+            flex: 0 1 auto;
         }
 
         .game-over-overlay {
@@ -101,17 +114,17 @@
 
         .game-over-overlay h2 {
             color: #fff;
-            font-size: 3rem;
+            font-size: clamp(1.5rem, 5vw, 3rem);
         }
 
         .game-over-overlay .winner {
             color: #00ff88;
-            font-size: 2rem;
+            font-size: clamp(1.2rem, 4vw, 2rem);
         }
 
         .game-over-overlay button {
-            padding: 15px 40px;
-            font-size: 1.2rem;
+            padding: 12px 30px;
+            font-size: clamp(1rem, 3vw, 1.2rem);
             background: #00ff88;
             border: none;
             border-radius: 8px;
@@ -129,7 +142,8 @@
         .instructions {
             color: rgba(255, 255, 255, 0.7);
             text-align: center;
-            font-size: 0.9rem;
+            font-size: clamp(0.75rem, 2vw, 0.9rem);
+            max-width: 90vw;
         }
 
         .progress-bar {
@@ -153,6 +167,48 @@
 
         .progress-fill.p2 {
             background: linear-gradient(90deg, #00bfff, #0099cc);
+        }
+
+        @media (max-width: 700px) {
+            .game-container {
+                gap: 10px;
+            }
+            .player-info {
+                padding: 10px;
+                min-width: 100px;
+                max-width: 140px;
+            }
+            .player-info h2 {
+                font-size: 1rem;
+                margin-bottom: 5px;
+            }
+            .player-info .score {
+                font-size: 1.2rem;
+                margin-bottom: 6px;
+            }
+            #gameCanvas {
+                max-width: 95vw;
+                max-height: 60vh;
+            }
+        }
+
+        @media (max-height: 600px) {
+            body {
+                gap: 8px;
+                padding: 8px;
+            }
+            h1 {
+                font-size: 1.3rem;
+            }
+            .game-container {
+                gap: 8px;
+            }
+            .player-info {
+                padding: 8px;
+            }
+            #gameCanvas {
+                max-height: 65vh;
+            }
         }
     </style>
 </head>
@@ -203,7 +259,8 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const gridSize = 20;
-        const tileCount = canvas.width / gridSize;
+        const tileCountX = canvas.width / gridSize;
+        const tileCountY = canvas.height / gridSize;
         const WIN_SCORE = 25;
 
         // Polyfill for roundRect (for older browsers)
@@ -239,14 +296,14 @@
         // Initialize game
         function initGame() {
             snake1 = [
-                { x: 5, y: Math.floor(tileCount / 2) },
-                { x: 4, y: Math.floor(tileCount / 2) },
-                { x: 3, y: Math.floor(tileCount / 2) }
+                { x: 5, y: Math.floor(tileCountY / 2) },
+                { x: 4, y: Math.floor(tileCountY / 2) },
+                { x: 3, y: Math.floor(tileCountY / 2) }
             ];
             snake2 = [
-                { x: tileCount - 6, y: Math.floor(tileCount / 2) },
-                { x: tileCount - 5, y: Math.floor(tileCount / 2) },
-                { x: tileCount - 4, y: Math.floor(tileCount / 2) }
+                { x: tileCountX - 6, y: Math.floor(tileCountY / 2) },
+                { x: tileCountX - 5, y: Math.floor(tileCountY / 2) },
+                { x: tileCountX - 4, y: Math.floor(tileCountY / 2) }
             ];
 
             snake1.direction = directions.RIGHT;
@@ -278,8 +335,8 @@
             let attempts = 0;
             do {
                 newFood = {
-                    x: Math.floor(Math.random() * tileCount),
-                    y: Math.floor(Math.random() * tileCount)
+                    x: Math.floor(Math.random() * tileCountX),
+                    y: Math.floor(Math.random() * tileCountY)
                 };
                 attempts++;
             } while (
@@ -288,6 +345,7 @@
                 snake2.some(seg => seg.x === newFood.x && seg.y === newFood.y))
             );
             food = newFood;
+        }
         }
 
         // Draw rounded rectangle helper
@@ -306,14 +364,16 @@
             // Draw grid
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
             ctx.lineWidth = 1;
-            for (let i = 0; i <= tileCount; i++) {
+            for (let i = 0; i <= tileCountX; i++) {
                 ctx.beginPath();
                 ctx.moveTo(i * gridSize, 0);
                 ctx.lineTo(i * gridSize, canvas.height);
                 ctx.stroke();
+            }
+            for (let j = 0; j <= tileCountY; j++) {
                 ctx.beginPath();
-                ctx.moveTo(0, i * gridSize);
-                ctx.lineTo(canvas.width, i * gridSize);
+                ctx.moveTo(0, j * gridSize);
+                ctx.lineTo(canvas.width, j * gridSize);
                 ctx.stroke();
             }
 
@@ -428,11 +488,11 @@
             };
 
             // Check wall collision
-            if (head1.x < 0 || head1.x >= tileCount || head1.y < 0 || head1.y >= tileCount) {
+            if (head1.x < 0 || head1.x >= tileCountX || head1.y < 0 || head1.y >= tileCountY) {
                 endGame('玩家二 🔵 获胜！(玩家一撞墙)', 'player2');
                 return;
             }
-            if (head2.x < 0 || head2.x >= tileCount || head2.y < 0 || head2.y >= tileCount) {
+            if (head2.x < 0 || head2.x >= tileCountX || head2.y < 0 || head2.y >= tileCountY) {
                 endGame('玩家一 🟢 获胜！(玩家二撞墙)', 'player1');
                 return;
             }
